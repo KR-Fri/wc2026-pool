@@ -220,7 +220,7 @@ header { background:var(--navy); border-bottom:1px solid var(--border); padding:
       <div class="how-card">
         <h3>📋 How the pool works</h3>
         <ul class="how-steps">
-          <li data-n="1"><strong>Pick group match winners</strong> — Go to the Group Stage tab and pick the winner of each of the 48 matches. Complete all picks before the group stage deadline.</li>
+          <li data-n="1"><strong>Pick group match winners</strong> — Go to the Group Stage tab and pick the winner of each of the 72 matches. Complete all picks before the group stage deadline.</li>
           <li data-n="2"><strong>Knockout bracket opens after the group stage</strong> — Once real-world group results are in, the commissioner seeds the 32 advancing teams into the official bracket. You then pick round by round.</li>
           <li data-n="3"><strong>Pick knockout winners round by round</strong> — Each round opens when the commissioner unlocks it. Pick the winner of each match — your pick cascades forward automatically.</li>
           <li data-n="4"><strong>Scores update as results come in</strong> — The commissioner enters actual results. The leaderboard updates automatically for everyone.</li>
@@ -236,14 +236,15 @@ header { background:var(--navy); border-bottom:1px solid var(--border); padding:
           <tr><td>Round of 16 winner</td><td class="pts">4 pts</td></tr>
           <tr><td>Quarter-final winner</td><td class="pts">8 pts</td></tr>
           <tr><td>Semi-final winner</td><td class="pts">16 pts</td></tr>
+          <tr><td>3rd place match winner</td><td class="pts">8 pts</td></tr>
           <tr><td>World Cup Winner (Final)</td><td class="pts">32 pts</td></tr>
-          <tr><td>Maximum possible</td><td class="pts">208 pts</td></tr>
+          <tr><td>Maximum possible</td><td class="pts">240 pts</td></tr>
         </table>
       </div>
       <div class="how-card">
         <h3>🗓 Timeline</h3>
         <ul class="how-steps">
-          <li data-n="→"><strong>Now until Group Stage Deadline:</strong> Make all 48 group picks</li>
+          <li data-n="→"><strong>Now until Group Stage Deadline:</strong> Make all 72 group picks</li>
           <li data-n="→"><strong>After June 27:</strong> Commissioner seeds the knockout bracket with the 32 real teams</li>
           <li data-n="→"><strong>Round by round:</strong> Commissioner opens each round, you pick winners</li>
           <li data-n="→"><strong>Knockout Deadline:</strong> All picks lock for final scoring</li>
@@ -258,10 +259,10 @@ header { background:var(--navy); border-bottom:1px solid var(--border); padding:
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
       <div>
         <div class="section-title">Group Stage</div>
-        <div id="group-progress-label" class="progress-label">0 / 48 matches picked</div>
+        <div id="group-progress-label" class="progress-label">0 / 72 matches picked</div>
         <div class="progress-bar" style="width:260px"><div class="progress-fill" id="group-progress-fill" style="width:0%"></div></div>
       </div>
-      <div style="font-size:12px;color:var(--text-muted);max-width:260px;line-height:1.5">Click a team to pick the match winner. Pick all 48 matches before the deadline.</div>
+      <div style="font-size:12px;color:var(--text-muted);max-width:260px;line-height:1.5">Click a team to pick the match winner. Pick all 72 matches before the deadline.</div>
     </div>
     <div id="group-banners"></div>
     <div class="groups-grid" id="groups-grid"></div>
@@ -290,8 +291,8 @@ header { background:var(--navy); border-bottom:1px solid var(--border); padding:
   <div id="myscore" class="page">
     <div class="section-title">My Score</div>
     <div class="score-bar">
-      <div class="score-stat"><div class="val" id="stat-group">0/48</div><div class="lbl">Group picks</div></div>
-      <div class="score-stat"><div class="val" id="stat-ko">0/31</div><div class="lbl">Knockout picks</div></div>
+      <div class="score-stat"><div class="val" id="stat-group">0/72</div><div class="lbl">Group picks</div></div>
+      <div class="score-stat"><div class="val" id="stat-ko">0/32</div><div class="lbl">Knockout picks</div></div>
       <div class="score-stat"><div class="val" id="stat-pts">0</div><div class="lbl">Points scored</div></div>
       <div class="score-stat"><div class="val" id="stat-max">0</div><div class="lbl">Max possible</div></div>
     </div>
@@ -327,18 +328,10 @@ header { background:var(--navy); border-bottom:1px solid var(--border); padding:
 <div class="modal-overlay" id="create-pool-modal">
   <div class="modal">
     <div class="modal-title">➕ Create New Pool</div>
-    <div class="modal-sub">Set your pool name and deadlines. You can adjust these anytime from the Commish panel.</div>
+    <div class="modal-sub">Name your pool — a join code is generated automatically. Set deadlines anytime from the Commish panel.</div>
     <div class="form-group">
       <label class="form-label"><strong>Pool Name</strong></label>
       <input class="form-input" id="new-pool-name" placeholder="e.g. Getram Buddies">
-    </div>
-    <div class="form-group">
-      <label class="form-label"><strong>Group Stage Deadline</strong> — no more group picks after this</label>
-      <input class="form-input" type="datetime-local" id="new-group-lock">
-    </div>
-    <div class="form-group">
-      <label class="form-label"><strong>Knockout Deadline</strong> — all knockout picks lock at this time</label>
-      <input class="form-input" type="datetime-local" id="new-ko-lock">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('create-pool-modal')">Cancel</button>
@@ -386,8 +379,8 @@ const FLAGS={};
 Object.values(GROUPS).forEach(g=>Object.assign(FLAGS,g.flags));
 function flag(t){return FLAGS[t]||"🏳️";}
 
-const ROUND_NAMES=["Round of 32","Round of 16","Quarter-Finals","Semi-Finals","Final"];
-const ROUND_PTS=[2,4,8,16,32];
+const ROUND_NAMES=["Round of 32","Round of 16","Quarter-Finals","Semi-Finals","3rd Place","Final"];
+const ROUND_PTS=[2,4,8,16,8,32];
 
 // ── STATE ────────────────────────────────────────────────
 let currentUser=null,isCommish=false,currentPoolId=null,poolData=null;
@@ -527,7 +520,7 @@ window.createPool=async()=>{
   const name=document.getElementById('new-pool-name').value.trim();
   if(!name){toast("Pool name required");return;}
   const joinCode=name.replace(/[^A-Z0-9]/gi,'').substring(0,3).toUpperCase()+'-'+Math.floor(1000+Math.random()*9000);
-  await db.collection('pools').add({name,joinCode,locks:{groupLock:toTs(document.getElementById('new-group-lock').value),koLock:toTs(document.getElementById('new-ko-lock').value),koOpen:null},memberCount:0,createdAt:TS()});
+  await db.collection('pools').add({name,joinCode,locks:{groupLock:null,koLock:null,koOpen:null},memberCount:0,createdAt:TS()});
   closeModal('create-pool-modal');toast('Pool created! Join code: '+joinCode);showCommishHome();
 };
 function toTs(v){return v?new Date(v).getTime():null;}
@@ -553,7 +546,7 @@ function renderGroups(){
   if(locked){
     banners.innerHTML=`<div class="banner b-lock">🔒 <div><strong>Group stage picks are locked.</strong> Head to the Knockout tab once the commissioner opens the bracket.</div></div>`;
   } else if(poolData?.locks?.groupLock){
-    banners.innerHTML=`<div class="banner b-info">⏰ <div>Picks lock at <strong>${fmtDate(poolData.locks.groupLock)}</strong>. Pick all 48 matches before then.</div></div>`;
+    banners.innerHTML=`<div class="banner b-info">⏰ <div>Picks lock at <strong>${fmtDate(poolData.locks.groupLock)}</strong>. Pick all 72 matches before then.</div></div>`;
   } else {banners.innerHTML='';}
   const grid=document.getElementById('groups-grid');grid.innerHTML='';
   Object.entries(GROUPS).forEach(([grp,data])=>{
@@ -572,8 +565,8 @@ function renderGroups(){
     grid.appendChild(card);
   });
   let picked=0;Object.values(state.groupPicks).forEach(g=>picked+=Object.keys(g).length);
-  document.getElementById('group-progress-fill').style.width=(picked/48*100)+'%';
-  document.getElementById('group-progress-label').textContent=`${picked} / 48 matches picked`;
+  document.getElementById('group-progress-fill').style.width=(picked/72*100)+'%';
+  document.getElementById('group-progress-label').textContent=`${picked} / 72 matches picked`;
 }
 
 window.pickGroup=(grp,mi,team)=>{
@@ -589,16 +582,19 @@ window.pickGroup=(grp,mi,team)=>{
 // Match 0: seeds[0] vs seeds[1], Match 1: seeds[2] vs seeds[3], etc.
 function getKoTeams(){
   const teams=[];
-  // Round 0: from seeds
   const r0=[];
   for(let i=0;i<16;i++)r0.push([bracketSeeds[i*2]||null,bracketSeeds[i*2+1]||null]);
   teams[0]=r0;
-  // Subsequent rounds: from picks
-  for(let r=1;r<=4;r++){
+  // Rounds 1-3: R16, QF, SF derived from picks
+  for(let r=1;r<=3;r++){
     const prev=teams[r-1];const cur=[];
     for(let m=0;m<prev.length/2;m++)cur.push([state.koPicks[r-1]?.[m*2]||null,state.koPicks[r-1]?.[m*2+1]||null]);
     teams[r]=cur;
   }
+  // Round 4: 3rd place — losers of SF (we let commish seed this via picks, treated as 1 match)
+  teams[4]=[[state.koPicks[4]?.[0]||null,state.koPicks[4]?.[1]||null]];
+  // Round 5: Final — winners of SF
+  teams[5]=[[state.koPicks[3]?.[0]||null,state.koPicks[3]?.[1]||null]];
   return teams;
 }
 
@@ -616,7 +612,7 @@ function renderBracket(){
   }
   const koTeams=getKoTeams();
   const bracket=document.getElementById('bracket');bracket.innerHTML='';
-  for(let r=0;r<=4;r++){
+  for(let r=0;r<=5;r++){
     const col=document.createElement('div');col.className='round-col';
     col.innerHTML=`<div class="round-header"><div class="round-name">${ROUND_NAMES[r]}</div><div class="round-pts">${ROUND_PTS[r]} pts/pick</div></div>`;
     const matchesDiv=document.createElement('div');matchesDiv.className='round-matches';
@@ -638,7 +634,7 @@ function renderBracket(){
     });
     col.appendChild(matchesDiv);bracket.appendChild(col);
   }
-  const champ=state.koPicks[4]?.[0];
+  const champ=state.koPicks[5]?.[0];
   const champBox=document.getElementById('champion-box');
   if(champ){champBox.style.display='block';document.getElementById('champion-name').textContent=`${flag(champ)||'🏳️'} ${champ}`;}
   else champBox.style.display='none';
@@ -653,7 +649,7 @@ window.pickKo=(round,mi,team)=>{
 };
 
 function cascadeClear(fromRound,fromMatch,clearedTeam){
-  for(let r=fromRound+1;r<=4;r++){
+  for(let r=fromRound+1;r<=5;r++){
     const idx=Math.floor(fromMatch/Math.pow(2,r-fromRound));
     if(state.koPicks[r]){const prev=state.koPicks[r][idx];if(clearedTeam&&prev!==clearedTeam)break;delete state.koPicks[r][idx];clearedTeam=prev;}
   }
@@ -669,7 +665,7 @@ function calcScore(userPicks){
       if(actual&&actual===pick){correct++;pts+=1;}
     });
   });
-  for(let r=0;r<=4;r++){
+  for(let r=0;r<=5;r++){
     const matches=userPicks.koPicks?.[r]||{};
     Object.entries(matches).forEach(([mi,pick])=>{
       if(!pick)return;total++;
@@ -699,10 +695,10 @@ function renderLeaderboard(){
   scored.forEach((u,i)=>{
     const rank=i+1,isMe=u.uid===currentUser.uid;
     const bc=rank===1?'r1':rank===2?'r2':rank===3?'r3':'rn';
-    const champ=u.koPicks?.[4]?.[0]||'—';
+    const champ=u.koPicks?.[5]?.[0]||'—';
     const gpicked=Object.values(u.groupPicks||{}).reduce((s,g)=>s+Object.keys(g).length,0);
     const kopicked=[0,1,2,3,4].reduce((s,r)=>s+Object.keys(u.koPicks?.[r]||{}).length,0);
-    const pct=Math.round(((gpicked+kopicked)/79)*100);
+    const pct=Math.round(((gpicked+kopicked)/104)*100);
     html+=`<tr class="${isMe?'me':''}">
       <td><span class="rank-badge ${bc}">${rank}</span></td>
       <td><div style="display:flex;align-items:center;gap:8px;">${u.photoURL?`<img src="${u.photoURL}" style="width:22px;height:22px;border-radius:50%;">`:''}<span>${u.displayName||'Anonymous'}${isMe?' <span style="color:var(--gold);font-size:11px">(you)</span>':''}</span></div></td>
@@ -721,13 +717,13 @@ function renderMyScore(){
   let gpicked=Object.values(state.groupPicks).reduce((s,g)=>s+Object.keys(g).length,0);
   let kopicked=[0,1,2,3,4].reduce((s,r)=>s+Object.keys(state.koPicks[r]||{}).length,0);
   let max=gpicked;
-  for(let r=0;r<=4;r++)max+=Object.keys(state.koPicks[r]||{}).length*ROUND_PTS[r];
-  document.getElementById('stat-group').textContent=gpicked+'/48';
-  document.getElementById('stat-ko').textContent=kopicked+'/31';
+  for(let r=0;r<=5;r++)max+=Object.keys(state.koPicks[r]||{}).length*ROUND_PTS[r];
+  document.getElementById('stat-group').textContent=gpicked+'/72';
+  document.getElementById('stat-ko').textContent=kopicked+'/32';
   document.getElementById('stat-pts').textContent=pts;
   document.getElementById('stat-max').textContent=max+' pts';
-  const champ=state.koPicks[4]?.[0];
-  let html=`<div style="font-size:13px;color:var(--text-muted);line-height:1.7"><strong style="color:var(--text)">${gpicked}/48</strong> group picks · <strong style="color:var(--text)">${kopicked}/31</strong> knockout picks<br><strong style="color:var(--gold)">${pts}</strong> points scored · <strong>${correct}/${total}</strong> correct</div>`;
+  const champ=state.koPicks[5]?.[0];
+  let html=`<div style="font-size:13px;color:var(--text-muted);line-height:1.7"><strong style="color:var(--text)">${gpicked}/72</strong> group picks · <strong style="color:var(--text)">${kopicked}/31</strong> knockout picks<br><strong style="color:var(--gold)">${pts}</strong> points scored · <strong>${correct}/${total}</strong> correct</div>`;
   if(champ)html+=`<div style="margin-top:12px;padding:12px;background:var(--surface);border-radius:8px;font-size:13px">🏆 Champion pick: <strong style="color:var(--gold)">${flag(champ)||'🏳️'} ${champ}</strong></div>`;
   document.getElementById('picks-summary').innerHTML=html;
 }
@@ -891,4 +887,3 @@ window.showTab=(id,el)=>{
 </script>
 </body>
 </html>
-
