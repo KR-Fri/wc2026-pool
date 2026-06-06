@@ -78,7 +78,7 @@ header{background:var(--navy);border-bottom:1px solid var(--border);padding:10px
 .group-completion{font-size:11px;color:var(--text-muted);}
 .match{padding:8px 14px;border-bottom:1px solid var(--border-dim);transition:background 0.15s;}
 .match:last-child{border-bottom:none;}
-.match.unpicked{background:rgba(201,168,76,0.04);border-left:3px solid rgba(201,168,76,0.3);}
+.match.unpicked{background:rgba(201,168,76,0.07);border-left:3px solid var(--gold);}
 .match.picked{border-left:3px solid transparent;}
 .match-teams{display:flex;flex-direction:column;gap:4px;}
 .team-pick{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;transition:all 0.15s;border:1px solid transparent;}
@@ -123,7 +123,7 @@ header{background:var(--navy);border-bottom:1px solid var(--border);padding:10px
 .lb-table th{text-align:left;padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);}
 .lb-table td{padding:10px 12px;border-bottom:1px solid var(--border-dim);font-size:13px;vertical-align:middle;}
 .lb-table tr:hover td{background:var(--surface2);}
-.lb-table tr.me td{background:rgba(201,168,76,0.07);border-left:3px solid var(--gold);}
+.lb-table tr.me td{background:rgba(201,168,76,0.12);}
 .rank-badge{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
 .r1{background:var(--gold);color:var(--navy);}
 .r2{background:#aaa;color:var(--navy);}
@@ -138,15 +138,18 @@ header{background:var(--navy);border-bottom:1px solid var(--border);padding:10px
 .score-stat .lbl{font-size:11px;color:var(--text-muted);margin-top:2px;}
 .score-section{margin-bottom:24px;}
 .score-section h3{font-size:12px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;}
-.score-match{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-dim);font-size:13px;flex-wrap:wrap;}
-.score-match:last-child{border-bottom:none;}
-.score-match .teams{flex:1;color:var(--text-muted);}
-.score-match .my-pick{padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;}
-.pick-correct{background:rgba(30,123,52,0.2);color:#4dbb6a;border:1px solid rgba(30,123,52,0.4);}
-.pick-wrong{background:rgba(192,57,43,0.2);color:#e88;border:1px solid rgba(192,57,43,0.4);}
-.pick-pending{background:rgba(201,168,76,0.1);color:var(--gold);border:1px solid var(--border);}
-.pick-none{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border-dim);}
-.score-match .pts-earned{font-size:12px;color:var(--gold);font-weight:700;min-width:40px;text-align:right;}
+.score-table{width:100%;border-collapse:collapse;font-size:13px;}
+.score-table th{text-align:left;padding:8px 10px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);letter-spacing:0.5px;}
+.score-table td{padding:8px 10px;border-bottom:1px solid var(--border-dim);vertical-align:middle;}
+.score-table tr:last-child td{border-bottom:none;}
+.score-table .match-teams-cell{color:var(--text-muted);font-size:12px;}
+.score-table .pick-cell{font-size:12px;font-weight:600;}
+.score-table .result-cell{font-size:12px;color:var(--text-muted);}
+.score-table .pts-cell{font-size:13px;font-weight:700;color:var(--gold);text-align:right;}
+.pick-correct{color:#4dbb6a;}
+.pick-wrong{color:#e88;}
+.pick-pending{color:var(--gold);}
+.pick-none{color:var(--text-muted);font-style:italic;}
 /* COMMISH */
 .commish-section{background:var(--surface);border:1px solid var(--border-dim);border-radius:10px;padding:20px;margin-bottom:20px;}
 .commish-section h3{font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;}
@@ -182,7 +185,10 @@ header{background:var(--navy);border-bottom:1px solid var(--border);padding:10px
 .chat-mention{color:var(--gold);font-weight:600;}
 .chat-delete{font-size:11px;color:var(--red);cursor:pointer;margin-left:6px;opacity:0;transition:opacity 0.15s;}
 .chat-bubble:hover .chat-delete{opacity:1;}
-.chat-input-wrap{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border-dim);}
+.chat-input-wrap{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border-dim);position:relative;}
+.mention-dropdown{position:absolute;bottom:54px;left:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;min-width:200px;z-index:50;overflow:hidden;display:none;}
+.mention-option{padding:8px 14px;font-size:13px;cursor:pointer;transition:background 0.1s;}
+.mention-option:hover{background:var(--surface2);color:var(--gold);}
 .chat-input{flex:1;padding:10px 14px;background:var(--navy2);border:1px solid var(--border-dim);border-radius:20px;color:var(--text);font-size:13px;outline:none;}
 .chat-input:focus{border-color:var(--gold);}
 .chat-send{padding:10px 16px;border-radius:20px;background:var(--gold);border:none;color:var(--navy);font-weight:600;font-size:13px;cursor:pointer;}
@@ -342,7 +348,8 @@ header{background:var(--navy);border-bottom:1px solid var(--border);padding:10px
     <div class="chat-wrap">
       <div class="chat-messages" id="chat-messages"><div style="color:var(--text-muted);font-size:13px">Loading messages…</div></div>
       <div class="chat-input-wrap">
-        <input class="chat-input" id="chat-input" placeholder="Message the pool… use @name to mention someone" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}">
+        <div class="mention-dropdown" id="mention-dropdown"></div>
+        <input class="chat-input" id="chat-input" placeholder="Message the pool… type @ to mention someone" onkeydown="chatKeyDown(event)" oninput="chatInput(this)">
         <button class="chat-send" onclick="sendChat()">Send</button>
       </div>
     </div>
@@ -642,11 +649,14 @@ function applyGroupFilters(){
     const grp=card.dataset.group;
     const data=GROUPS[grp];
     if(activeGroupFilter==='unpicked'){
-      const totalPicked=Object.keys(state.groupPicks[grp]||{}).length;
-      card.classList.toggle('hidden',totalPicked===data.matches.length);
+      // show group only if it has at least one unpicked match
+      const unpickedCount=data.matches.filter((_,mi)=>!state.groupPicks[grp]?.[mi]).length;
+      card.classList.toggle('hidden',unpickedCount===0);
+      // within visible cards, highlight unpicked matches
     } else if(activeGroupFilter!=='all'){
       card.classList.toggle('hidden',grp!==activeGroupFilter);
     } else if(teamSearch){
+      // show group if any team name matches search
       const hasTeam=data.teams.some(t=>t.toLowerCase().includes(teamSearch));
       card.classList.toggle('hidden',!hasTeam);
     } else {
@@ -854,53 +864,49 @@ function renderMyScore(){
   document.getElementById('stat-pts').textContent=pts;
   document.getElementById('stat-correct').textContent=correct+'/'+total;
 
-  // Group stage matches
-  const grpList=document.getElementById('score-group-list');grpList.innerHTML='';
+  function pickRow(pick,actual,ptsVal,t1,t2){
+    let pickClass='pick-none',pickLabel='—',resultLabel='',ptsLabel='';
+    if(pick){
+      if(!actual){pickClass='pick-pending';pickLabel=`${flag(pick)} ${pick}`;}
+      else if(actual===pick){pickClass='pick-correct';pickLabel=`✓ ${flag(pick)} ${pick}`;ptsLabel='+'+ptsVal;}
+      else{pickClass='pick-wrong';pickLabel=`✗ ${flag(pick)} ${pick}`;}
+    }
+    if(actual)resultLabel=`${flag(actual)} ${actual}`;
+    return`<td class="match-teams-cell">${flag(t1)} ${t1} vs ${flag(t2)} ${t2}</td>
+      <td class="pick-cell ${pickClass}">${pickLabel}</td>
+      <td class="result-cell">${resultLabel||'<span style="color:var(--border)">Pending</span>'}</td>
+      <td class="pts-cell">${ptsLabel}</td>`;
+  }
+
+  // Group table
+  const grpList=document.getElementById('score-group-list');
+  let html=`<table class="score-table"><thead><tr><th>Match</th><th>Your Pick</th><th>Result</th><th style="text-align:right">Pts</th></tr></thead><tbody>`;
   Object.entries(GROUPS).forEach(([grp,data])=>{
+    html+=`<tr><td colspan="4" style="font-size:11px;font-weight:700;color:var(--gold);padding:10px 10px 4px;letter-spacing:1px">GROUP ${grp}</td></tr>`;
     data.matches.forEach((match,mi)=>{
       const pick=state.groupPicks[grp]?.[mi];
       const actual=resultsData?.group?.[grp]?.[mi];
-      const row=document.createElement('div');row.className='score-match';
-      let pickClass='pick-none',pickLabel='Not picked';
-      if(pick){
-        if(!actual){pickClass='pick-pending';pickLabel=`${flag(pick)} ${pick}`;}
-        else if(actual===pick){pickClass='pick-correct';pickLabel=`✓ ${flag(pick)} ${pick}`;}
-        else{pickClass='pick-wrong';pickLabel=`✗ ${flag(pick)} ${pick}`;}
-      }
-      const ptsEarned=pick&&actual&&actual===pick?'+1':'';
-      row.innerHTML=`<span class="teams">${flag(match[0])} ${match[0]} vs ${flag(match[1])} ${match[1]}<span style="font-size:11px;color:var(--text-muted);margin-left:6px">Grp ${grp}</span></span>
-        <span class="my-pick ${pickClass}">${pickLabel}</span>
-        <span class="pts-earned">${ptsEarned}</span>`;
-      grpList.appendChild(row);
+      html+=`<tr>${pickRow(pick,actual,1,match[0],match[1])}</tr>`;
     });
   });
+  html+='</tbody></table>';
+  grpList.innerHTML=html;
 
-  // Knockout matches
-  const koList=document.getElementById('score-ko-list');koList.innerHTML='';
+  // KO table
+  const koList=document.getElementById('score-ko-list');
   const koTeams=getKoTeams();
+  let koHtml=`<table class="score-table"><thead><tr><th>Match</th><th>Your Pick</th><th>Result</th><th style="text-align:right">Pts</th></tr></thead><tbody>`;
   for(let r=0;r<=5;r++){
-    const header=document.createElement('div');
-    header.style.cssText='font-size:11px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin:12px 0 6px;';
-    header.textContent=ROUND_NAMES[r];koList.appendChild(header);
+    koHtml+=`<tr><td colspan="4" style="font-size:11px;font-weight:700;color:var(--gold);padding:10px 10px 4px;letter-spacing:1px">${ROUND_NAMES[r].toUpperCase()}</td></tr>`;
     (koTeams[r]||[]).forEach((pair,mi)=>{
-      const[t1,t2]=pair;if(!t1&&!t2)return;
+      const[t1,t2]=pair;
       const pick=state.koPicks[r]?.[mi];
       const actual=resultsData?.ko?.[r]?.[mi];
-      const row=document.createElement('div');row.className='score-match';
-      let pickClass='pick-none',pickLabel='Not picked';
-      if(pick){
-        if(!actual){pickClass='pick-pending';pickLabel=`${flag(pick)} ${pick}`;}
-        else if(actual===pick){pickClass='pick-correct';pickLabel=`✓ ${flag(pick)} ${pick}`;}
-        else{pickClass='pick-wrong';pickLabel=`✗ ${flag(pick)} ${pick}`;}
-      }
-      const ptsEarned=pick&&actual&&actual===pick?'+'+ROUND_PTS[r]:'';
-      const teams=t1&&t2?`${flag(t1)} ${t1} vs ${flag(t2)} ${t2}`:'TBD';
-      row.innerHTML=`<span class="teams">${teams}</span>
-        <span class="my-pick ${pickClass}">${pickLabel}</span>
-        <span class="pts-earned">${ptsEarned}</span>`;
-      koList.appendChild(row);
+      koHtml+=`<tr>${pickRow(pick,actual,ROUND_PTS[r],t1||'TBD',t2||'TBD')}</tr>`;
     });
   }
+  koHtml+='</tbody></table>';
+  koList.innerHTML=koHtml;
 }
 
 function renderHowDeadlines(){
@@ -910,6 +916,39 @@ function renderHowDeadlines(){
 }
 
 // ── CHAT ─────────────────────────────────────────────────
+// ── CHAT ─────────────────────────────────────────────────
+let chatMembers=[];
+
+window.chatKeyDown=(e)=>{
+  const dd=document.getElementById('mention-dropdown');
+  if(dd.style.display==='block'&&e.key==='Escape'){dd.style.display='none';return;}
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}
+};
+
+window.chatInput=(input)=>{
+  const val=input.value;
+  const atIdx=val.lastIndexOf('@');
+  const dd=document.getElementById('mention-dropdown');
+  if(atIdx===-1||val.slice(atIdx).includes(' ')){dd.style.display='none';return;}
+  const query=val.slice(atIdx+1).toLowerCase();
+  // build mention options: Commish + all pool members
+  const commishName=poolData?.commishName||'Commish';
+  const options=['Commish',...chatMembers.filter(n=>n!==currentUser.displayName)];
+  const filtered=options.filter(n=>n.toLowerCase().startsWith(query));
+  if(!filtered.length){dd.style.display='none';return;}
+  dd.innerHTML=filtered.map(n=>`<div class="mention-option" onclick="insertMention('${n}')">@${n}</div>`).join('');
+  dd.style.display='block';
+};
+
+window.insertMention=(name)=>{
+  const input=document.getElementById('chat-input');
+  const val=input.value;
+  const atIdx=val.lastIndexOf('@');
+  input.value=val.slice(0,atIdx)+'@'+name+' ';
+  document.getElementById('mention-dropdown').style.display='none';
+  input.focus();
+};
+
 function subscribeChat(){
   if(chatUnsub)chatUnsub();
   chatUnsub=db.collection('pools').doc(currentPoolId).collection('chat')
@@ -917,23 +956,26 @@ function subscribeChat(){
     .onSnapshot(snap=>{
       const container=document.getElementById('chat-messages');
       container.innerHTML='';
+      // collect unique member names for @mentions
+      const names=new Set();
+      snap.forEach(d=>d.data().displayName&&names.add(d.data().displayName));
+      chatMembers=[...names];
       if(snap.empty){container.innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:12px">No messages yet. Say hello! 👋</div>';return;}
       snap.forEach(d=>{
         const msg=d.data();const isMe=msg.uid===currentUser.uid;
         const div=document.createElement('div');div.className='chat-msg'+(isMe?' mine':'');
         const time=msg.ts?new Date(msg.ts.toDate()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
-        const text=msg.text.replace(/@(\w[\w\s]*)/g,'<span class="chat-mention">@$1</span>');
-        const deleteBtn=isCommish||isMe?`<span class="chat-delete" onclick="deleteMsg('${d.id}')">Delete</span>`:'';
-        div.innerHTML=`${!isMe?`<img class="chat-avatar" src="${msg.photoURL||''}" onerror="this.src=''">`:''}<div>
+        const text=msg.text.replace(/@(\S+)/g,'<span class="chat-mention">@$1</span>');
+        const canDelete=isCommish||isMe;
+        const deleteBtn=canDelete?`<span class="chat-delete" onclick="deleteMsg('${d.id}')">Delete</span>`:'';
+        div.innerHTML=`${!isMe?`<img class="chat-avatar" src="${msg.photoURL||''}" onerror="this.style.display='none'">`:''}<div>
           <div class="chat-meta">${msg.displayName||'Anonymous'} · ${time}${deleteBtn}</div>
           <div class="chat-bubble"><span class="chat-text">${text}</span></div>
-        </div>${isMe?`<img class="chat-avatar" src="${msg.photoURL||''}" onerror="this.src=''">`:''} `;
+        </div>${isMe?`<img class="chat-avatar" src="${msg.photoURL||''}" onerror="this.style.display='none'">`:''} `;
         container.appendChild(div);
       });
       container.scrollTop=container.scrollHeight;
-      // update members list
-      const members=[...new Set(snap.docs.map(d=>d.data().displayName||'Anonymous'))];
-      document.getElementById('chat-members').textContent=members.length+' member'+(members.length!==1?'s':'')+' in pool chat';
+      document.getElementById('chat-members').textContent=chatMembers.length+' member'+(chatMembers.length!==1?'s':'')+' · type @ to mention someone';
     });
 }
 
