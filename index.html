@@ -349,7 +349,7 @@ header{background:var(--navy);border-bottom:1px solid var(--border);padding:10px
       <div class="chat-messages" id="chat-messages"><div style="color:var(--text-muted);font-size:13px">Loading messages…</div></div>
       <div class="chat-input-wrap">
         <div class="mention-dropdown" id="mention-dropdown"></div>
-        <input class="chat-input" id="chat-input" placeholder="Message the pool… type @ to mention someone" onkeydown="chatKeyDown(event)" oninput="chatInput(this)">
+        <input class="chat-input" id="chat-input" placeholder="Message everyone… type @ to mention (@All, @Commish, or a name)" onkeydown="chatKeyDown(event)" oninput="chatInput(this)">
         <button class="chat-send" onclick="sendChat()">Send</button>
       </div>
     </div>
@@ -638,7 +638,7 @@ window.filterGroup=(val,btn)=>{
   applyGroupFilters();
 };
 window.filterByTeam=(val)=>{
-  teamSearch=val.toLowerCase();
+  teamSearch=val.toLowerCase().trim();
   activeGroupFilter='all';
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
   applyGroupFilters();
@@ -647,21 +647,19 @@ window.filterByTeam=(val)=>{
 function applyGroupFilters(){
   document.querySelectorAll('.group-card').forEach(card=>{
     const grp=card.dataset.group;
+    if(!grp)return;
     const data=GROUPS[grp];
-    if(activeGroupFilter==='unpicked'){
-      // show group only if it has at least one unpicked match
-      const unpickedCount=data.matches.filter((_,mi)=>!state.groupPicks[grp]?.[mi]).length;
-      card.classList.toggle('hidden',unpickedCount===0);
-      // within visible cards, highlight unpicked matches
+    let show=true;
+    if(teamSearch){
+      show=data.teams.some(t=>t.toLowerCase().includes(teamSearch));
+    } else if(activeGroupFilter==='unpicked'){
+      const picks=state.groupPicks[grp]||{};
+      const unpicked=data.matches.filter((_,mi)=>!picks[mi]);
+      show=unpicked.length>0;
     } else if(activeGroupFilter!=='all'){
-      card.classList.toggle('hidden',grp!==activeGroupFilter);
-    } else if(teamSearch){
-      // show group if any team name matches search
-      const hasTeam=data.teams.some(t=>t.toLowerCase().includes(teamSearch));
-      card.classList.toggle('hidden',!hasTeam);
-    } else {
-      card.classList.remove('hidden');
+      show=grp===activeGroupFilter;
     }
+    card.classList.toggle('hidden',!show);
   });
 }
 
@@ -933,7 +931,7 @@ window.chatInput=(input)=>{
   const query=val.slice(atIdx+1).toLowerCase();
   // build mention options: Commish + all pool members
   const commishName=poolData?.commishName||'Commish';
-  const options=['Commish',...chatMembers.filter(n=>n!==currentUser.displayName)];
+  const options=['All','Commish',...chatMembers.filter(n=>n!==currentUser.displayName)];
   const filtered=options.filter(n=>n.toLowerCase().startsWith(query));
   if(!filtered.length){dd.style.display='none';return;}
   dd.innerHTML=filtered.map(n=>`<div class="mention-option" onclick="insertMention('${n}')">@${n}</div>`).join('');
@@ -975,7 +973,7 @@ function subscribeChat(){
         container.appendChild(div);
       });
       container.scrollTop=container.scrollHeight;
-      document.getElementById('chat-members').textContent=chatMembers.length+' member'+(chatMembers.length!==1?'s':'')+' · type @ to mention someone';
+      document.getElementById('chat-members').textContent=chatMembers.length+' member'+(chatMembers.length!==1?'s':'')+' · Everyone sees all messages · type @ to mention';
     });
 }
 
