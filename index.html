@@ -427,12 +427,48 @@ header { background:var(--navy); border-bottom:1px solid var(--border); padding:
 
 <div class="toast" id="toast"></div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as fbSignOut }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, onSnapshot, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+<script>
+function doc(db, ...args) {
+  let ref = db;
+  for(let i=0;i<args.length;i++){
+    ref = (i%2===0) ? ref.collection(args[i]) : ref.doc(args[i]);
+  }
+  return ref;
+}
+function collection(db, ...args) {
+  let ref = db;
+  for(let i=0;i<args.length;i++){
+    ref = (i%2===0) ? ref.collection(args[i]) : ref.doc(args[i]);
+  }
+  return ref;
+}
+async function getDoc(ref) {
+  const snap = await ref.get();
+  return { exists: ()=>snap.exists, data: ()=>snap.data(), id: snap.id };
+}
+async function getDocs(ref) {
+  const snap = await ref.get();
+  const docs = [];
+  snap.forEach(d => docs.push({ id: d.id, data: ()=>d.data() }));
+  docs.forEach = (cb) => docs.forEach(cb);
+  // make it iterable like modular SDK
+  const result = { forEach: (cb)=>snap.forEach(d=>cb({id:d.id,data:()=>d.data()})), size: snap.size };
+  return result;
+}
+function setDoc(ref, data, opts) { return opts?.merge ? ref.set(data,{merge:true}) : ref.set(data); }
+function updateDoc(ref, data) { return ref.update(data); }
+function addDoc(colRef, data) { return colRef.add(data); }
+function onSnapshot(ref, cb) {
+  return ref.onSnapshot(snap=>{
+    const result = { forEach: (fn)=>snap.forEach(d=>fn({id:d.id,data:()=>d.data()})) };
+    cb(result);
+  });
+}
+const serverTimestamp = ()=>firebase.firestore.FieldValue.serverTimestamp();
 
 const firebaseConfig = {
   apiKey: "AIzaSyAkGfU3Sk1lis539zPVxLbMTCh88QMq2B8",
@@ -444,9 +480,9 @@ const firebaseConfig = {
 };
 const COMMISH_EMAIL = "rajagopalkarthik@gmail.com";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
 // ── STATIC DATA ───────────────────────────────────────────
 const GROUPS = {
@@ -479,13 +515,13 @@ const state={groupPicks:{},koPicks:{},koSnapshot:{},koTeams:[]};
 
 // ── AUTH ──────────────────────────────────────────────────
 window.signInWithGoogle=async()=>{
-  try{await signInWithPopup(auth,new GoogleAuthProvider());}
+  try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());}
   catch(e){toast("Sign-in failed: "+e.message);}
 };
 window.doSignOut=async()=>{
   if(leaderboardUnsub)leaderboardUnsub();
   currentPoolId=null;poolData=null;
-  await fbSignOut(auth);
+  await auth.signOut();
 };
 window.switchPool=()=>{
   if(leaderboardUnsub){leaderboardUnsub();leaderboardUnsub=null;}
@@ -502,7 +538,7 @@ setTimeout(()=>{
   }
 },8000);
 
-onAuthStateChanged(auth,async user=>{
+auth.onAuthStateChanged(async user=>{
   document.getElementById('loading-screen').style.display='none';
   if(!user){currentUser=null;isCommish=false;showAuthScreen();return;}
   currentUser=user;
