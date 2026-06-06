@@ -247,7 +247,7 @@ header { background:var(--navy); border-bottom:1px solid var(--border); padding:
 </div>
 
 <!-- COMMISH HOME -->
-<div id="commish-home">
+<div id="commish-home" style="display:none">
   <div class="ch-header">
     <div>
       <div class="ch-title">🏆 Commissioner Dashboard</div>
@@ -493,6 +493,14 @@ window.switchPool=()=>{
   document.getElementById('main-app').style.display='none';
   isCommish?showCommishHome():showJoinScreen();
 };
+
+// Fallback: if auth doesn't fire within 8 seconds, show auth screen
+setTimeout(()=>{
+  if(document.getElementById('loading-screen').style.display!=='none'){
+    document.getElementById('loading-screen').style.display='none';
+    showAuthScreen();
+  }
+},8000);
 
 onAuthStateChanged(auth,async user=>{
   document.getElementById('loading-screen').style.display='none';
