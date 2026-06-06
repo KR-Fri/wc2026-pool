@@ -1132,4 +1132,12 @@ window.showTab=(id,el)=>{
   if(id==='knockout'){buildKoTeams();renderBracket();}
   if(id==='leaderboard')renderLeaderboard();
   if(id==='myscore')renderMyScore();
-  if(id==='commish')renderCommis
+  if(id==='commish')renderCommishPanel();
+};
+
+window.openModal=(id)=>document.getElementById(id).classList.add('show');
+window.closeModal=(id)=>document.getElementById(id).classList.remove('show');
+window.toast=(msg)=>{const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000);};
+</script>
+</body>
+</html>
