@@ -649,7 +649,13 @@ window.joinPool=async()=>{
 
 async function enterPool(poolId){
   const pSnap=await db.collection('pools').doc(poolId).get();
-  if(!pSnap.exists){toast("Pool not found");return;}
+  if(!pSnap.exists){
+    // Pool was deleted — clear userMeta and send to join screen
+    await db.collection('userMeta').doc(currentUser.uid).set({poolId:null},{merge:true});
+    toast("That pool no longer exists. Please enter a new join code.");
+    showJoinScreen();
+    return;
+  }
   currentPoolId=poolId;poolData=pSnap.data();
   const picksSnap=await db.collection('pools').doc(poolId).collection('picks').doc(currentUser.uid).get();
   if(picksSnap.exists){const d=picksSnap.data();state.groupPicks=d.groupPicks||{};state.koPicks=d.koPicks||{};}
@@ -782,7 +788,7 @@ function renderGroups(){
       if(actual){
         const resultLabel=document.createElement('div');
         resultLabel.className='match-result-label';
-        resultLabel.textContent=`Result: ${actual}`;
+        resultLabel.textContent=actual==='draw'?'Result: Draw 🤝':`Result: ${actual}`;
         div.appendChild(resultLabel);
       }
       const teamsDiv=document.createElement('div');teamsDiv.className='match-teams';
@@ -791,6 +797,8 @@ function renderGroups(){
         const isLoser=picked&&picked!==team;
         let extraClass='';
         if(isSel&&actual){extraClass=actual===team?' correct':' wrong';}
+        // draw means everyone is wrong
+        if(isSel&&actual==='draw'){extraClass=' wrong';}
         const el=document.createElement('div');
         el.className=`team-pick${isSel?' selected':''}${extraClass}${isLoser?' loser':''}${locked?' lk':''}`;
         el.innerHTML=`<span class="team-flag">${flag(team)}</span><span class="team-name">${team}</span>`;
@@ -963,10 +971,11 @@ function renderMyScore(){
     let pickClass='pick-none',pickLabel='—',resultLabel='',ptsLabel='';
     if(pick){
       if(!actual){pickClass='pick-pending';pickLabel=`${flag(pick)} ${pick}`;}
+      else if(actual==='draw'){pickClass='pick-wrong';pickLabel=`✗ ${flag(pick)} ${pick} (Draw)`;}
       else if(actual===pick){pickClass='pick-correct';pickLabel=`✓ ${flag(pick)} ${pick}`;ptsLabel='+'+ptsVal;}
       else{pickClass='pick-wrong';pickLabel=`✗ ${flag(pick)} ${pick}`;}
     }
-    if(actual)resultLabel=`${flag(actual)} ${actual}`;
+    if(actual)resultLabel=actual==='draw'?'🤝 Draw':`${flag(actual)} ${actual}`;
     const dateCell=date?`<td style="font-size:11px;color:var(--text-muted);white-space:nowrap;line-height:1.4">${date}${grp?` <span style="color:var(--gold);font-weight:700">${grp}</span>`:''}<br>${time||''} CT</td>`:'<td></td>';
     return`${dateCell}<td class="match-teams-cell">${flag(t1)} ${t1} vs ${flag(t2)} ${t2}</td>
       <td class="pick-cell ${pickClass}">${pickLabel}</td>
@@ -1172,7 +1181,8 @@ function renderResultsEntry(){
       const actual=resultsData?.group?.[grp]?.[mi];
       const row=document.createElement('div');row.className='result-match';
       row.innerHTML=`<span style="font-size:11px;color:var(--text-muted);min-width:55px">Match ${mi+1}</span>`+
-        match.map(t=>`<button class="result-btn ${actual===t?'selected':''}" onclick="setResult('group','${grp}',${mi},'${t.replace(/'/g,"\\'")}')">${flag(t)} ${t}</button>`).join('<span style="color:var(--text-muted);font-size:11px;padding:0 2px">vs</span>');
+        match.map(t=>`<button class="result-btn ${actual===t?'selected':''}" onclick="setResult('group','${grp}',${mi},'${t.replace(/'/g,"\\'")}')">${flag(t)} ${t}</button>`).join('<span style="color:var(--text-muted);font-size:11px;padding:0 2px">vs</span>')+
+        `<button class="result-btn ${actual==='draw'?'selected':''}" onclick="setResult('group','${grp}',${mi},'draw')" style="margin-left:6px;font-size:11px">🤝 Draw</button>`;
       grpDiv.appendChild(row);
     });
   });
