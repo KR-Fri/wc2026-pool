@@ -559,6 +559,8 @@ const MATCH_SCHEDULE=[
   ["J",2,"Jun 27","9:00 PM CT"],  // Jordan vs Argentina
   ["J",4,"Jun 27","9:00 PM CT"],  // Algeria vs Austria
 ]
+const ROUND_NAMES=["Round of 32","Round of 16","Quarter-Finals","Semi-Finals","3rd Place","Final"];
+const ROUND_PTS=[2,4,8,16,8,32];
 const FLAGS={};Object.values(GROUPS).forEach(g=>Object.assign(FLAGS,g.flags));
 function flag(t){return FLAGS[t]||"🏳️";}
 
@@ -975,7 +977,7 @@ function renderMyScore(){
       else{pickClass='pick-wrong';pickLabel=`✗ ${flag(pick)} ${pick}`;}
     }
     if(actual)resultLabel=actual==='draw'?'🤝 Draw':`${flag(actual)} ${actual}`;
-    const dateCell=date?`<td style="font-size:11px;color:var(--text-muted);white-space:nowrap;line-height:1.4">${date}${grp?` <span style="color:var(--gold);font-weight:700">${grp}</span>`:''}<br>${time||''} CT</td>`:'<td></td>';
+    const dateCell=date?`<td style="font-size:11px;color:var(--text-muted);white-space:nowrap;line-height:1.4">${date}${grp?` <span style="color:var(--gold);font-weight:700">${grp}</span>`:''}<br>${time||''}</td>`:'<td></td>';
     return`${dateCell}<td class="match-teams-cell">${flag(t1)} ${t1} vs ${flag(t2)} ${t2}</td>
       <td class="pick-cell ${pickClass}">${pickLabel}</td>
       <td class="result-cell">${resultLabel||'<span style="color:var(--border)">—</span>'}</td>
@@ -1247,4 +1249,3 @@ window.showTab=(id,el)=>{
 </script>
 </body>
 </html>
-
