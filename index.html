@@ -490,7 +490,7 @@ const MATCH_SCHEDULE=[
   ["A",4,"Jun 11","9:00 PM CT"],  // South Korea vs Czechia
   ["B",2,"Jun 12","2:00 PM CT"],  // Canada vs Bosnia & Herz.
   ["D",0,"Jun 12","8:00 PM CT"],  // USA vs Paraguay
-  ["D",4,"Jun 13","11:00 AM CT"],  // Australia vs Türkiye
+  ["D",4,"Jun 12","11:00 PM CT"],  // Australia vs Türkiye
   ["B",3,"Jun 13","2:00 PM CT"],  // Qatar vs Switzerland
   ["C",0,"Jun 13","5:00 PM CT"],  // Brazil vs Morocco
   ["C",5,"Jun 13","8:00 PM CT"],  // Haiti vs Scotland
@@ -502,7 +502,7 @@ const MATCH_SCHEDULE=[
   ["G",0,"Jun 15","2:00 PM CT"],  // Belgium vs Egypt
   ["H",3,"Jun 15","5:00 PM CT"],  // Saudi Arabia vs Uruguay
   ["G",4,"Jun 15","8:00 PM CT"],  // Iran vs New Zealand
-  ["J",5,"Jun 16","11:00 AM CT"],  // Austria vs Jordan
+  ["J",5,"Jun 15","11:00 PM CT"],  // Austria vs Jordan
   ["I",0,"Jun 16","2:00 PM CT"],  // France vs Senegal
   ["I",5,"Jun 16","5:00 PM CT"],  // Iraq vs Norway
   ["J",0,"Jun 16","8:00 PM CT"],  // Argentina vs Algeria
@@ -518,15 +518,15 @@ const MATCH_SCHEDULE=[
   ["C",4,"Jun 19","5:00 PM CT"],  // Scotland vs Morocco
   ["C",1,"Jun 19","7:30 PM CT"],  // Brazil vs Haiti
   ["D",5,"Jun 19","10:00 PM CT"],  // Türkiye vs Paraguay
-  ["F",1,"Jun 20","12:00 AM CT"],  // Netherlands vs Sweden
-  ["F",4,"Jun 20","11:00 PM CT"],  // Tunisia vs Japan
+  ["F",1,"Jun 20","12:00 PM CT"],  // Netherlands vs Sweden
+  ["F",4,"Jun 19","11:00 PM CT"],  // Tunisia vs Japan
   ["E",1,"Jun 20","3:00 PM CT"],  // Germany vs Ivory Coast
   ["E",5,"Jun 20","7:00 PM CT"],  // Ecuador vs Curaçao
   ["H",1,"Jun 21","11:00 AM CT"],  // Spain vs Saudi Arabia
   ["G",1,"Jun 21","2:00 PM CT"],  // Belgium vs Iran
   ["H",5,"Jun 21","5:00 PM CT"],  // Uruguay vs Cape Verde
   ["G",5,"Jun 21","8:00 PM CT"],  // New Zealand vs Egypt
-  ["J",1,"Jun 22","12:00 AM CT"],  // Argentina vs Austria
+  ["J",1,"Jun 22","12:00 PM CT"],  // Argentina vs Austria
   ["I",1,"Jun 22","4:00 PM CT"],  // France vs Iraq
   ["I",4,"Jun 22","7:00 PM CT"],  // Norway vs Senegal
   ["J",3,"Jun 22","10:00 PM CT"],  // Jordan vs Algeria
@@ -559,7 +559,6 @@ const MATCH_SCHEDULE=[
   ["J",2,"Jun 27","9:00 PM CT"],  // Jordan vs Argentina
   ["J",4,"Jun 27","9:00 PM CT"],  // Algeria vs Austria
 ]
-const ROUND_PTS=[2,4,8,16,8,32];
 const FLAGS={};Object.values(GROUPS).forEach(g=>Object.assign(FLAGS,g.flags));
 function flag(t){return FLAGS[t]||"🏳️";}
 
