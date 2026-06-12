@@ -486,14 +486,14 @@ const GROUPS={
 // K:[0]=PorvCOD,[1]=PorvUzb,[2]=PorvCol,[3]=CODvUzb,[4]=CODvCol,[5]=UzbvCol
 // L:[0]=EngvCro,[1]=EngvGha,[2]=EngvPan,[3]=CrovGha,[4]=CrovPan,[5]=GhavPan
 const MATCH_SCHEDULE=[
-  ["A",1,"Jun 11","2:00 PM CT"],  // Mexico vs South Africa
-  ["A",4,"Jun 11","9:00 PM CT"],  // South Korea vs Czechia
+  ["A",1,"Jun 11","3:00 PM CT"],  // Mexico vs South Africa
+  ["A",4,"Jun 11","10:00 PM CT"],  // South Korea vs Czechia
   ["B",2,"Jun 12","2:00 PM CT"],  // Canada vs Bosnia & Herz.
   ["D",0,"Jun 12","8:00 PM CT"],  // USA vs Paraguay
-  ["D",4,"Jun 12","11:00 PM CT"],  // Australia vs Türkiye
   ["B",3,"Jun 13","2:00 PM CT"],  // Qatar vs Switzerland
   ["C",0,"Jun 13","5:00 PM CT"],  // Brazil vs Morocco
   ["C",5,"Jun 13","8:00 PM CT"],  // Haiti vs Scotland
+  ["D",4,"Jun 13","11:00 PM CT"],  // Australia vs Türkiye
   ["E",0,"Jun 14","12:00 PM CT"],  // Germany vs Curaçao
   ["F",0,"Jun 14","3:00 PM CT"],  // Netherlands vs Japan
   ["E",3,"Jun 14","6:00 PM CT"],  // Ivory Coast vs Ecuador
@@ -502,10 +502,10 @@ const MATCH_SCHEDULE=[
   ["G",0,"Jun 15","2:00 PM CT"],  // Belgium vs Egypt
   ["H",3,"Jun 15","5:00 PM CT"],  // Saudi Arabia vs Uruguay
   ["G",4,"Jun 15","8:00 PM CT"],  // Iran vs New Zealand
-  ["J",5,"Jun 15","11:00 PM CT"],  // Austria vs Jordan
   ["I",0,"Jun 16","2:00 PM CT"],  // France vs Senegal
   ["I",5,"Jun 16","5:00 PM CT"],  // Iraq vs Norway
   ["J",0,"Jun 16","8:00 PM CT"],  // Argentina vs Algeria
+  ["J",5,"Jun 16","11:00 PM CT"],  // Austria vs Jordan
   ["K",0,"Jun 17","12:00 PM CT"],  // Portugal vs DR Congo
   ["L",0,"Jun 17","3:00 PM CT"],  // England vs Croatia
   ["L",5,"Jun 17","6:00 PM CT"],  // Ghana vs Panama
@@ -519,9 +519,9 @@ const MATCH_SCHEDULE=[
   ["C",1,"Jun 19","7:30 PM CT"],  // Brazil vs Haiti
   ["D",5,"Jun 19","10:00 PM CT"],  // Türkiye vs Paraguay
   ["F",1,"Jun 20","12:00 PM CT"],  // Netherlands vs Sweden
-  ["F",4,"Jun 19","11:00 PM CT"],  // Tunisia vs Japan
   ["E",1,"Jun 20","3:00 PM CT"],  // Germany vs Ivory Coast
   ["E",5,"Jun 20","7:00 PM CT"],  // Ecuador vs Curaçao
+  ["F",4,"Jun 20","11:00 PM CT"],  // Tunisia vs Japan
   ["H",1,"Jun 21","11:00 AM CT"],  // Spain vs Saudi Arabia
   ["G",1,"Jun 21","2:00 PM CT"],  // Belgium vs Iran
   ["H",5,"Jun 21","5:00 PM CT"],  // Uruguay vs Cape Verde
@@ -556,10 +556,9 @@ const MATCH_SCHEDULE=[
   ["L",3,"Jun 27","4:00 PM CT"],  // Croatia vs Ghana
   ["K",2,"Jun 27","6:30 PM CT"],  // Colombia vs Portugal
   ["K",3,"Jun 27","6:30 PM CT"],  // DR Congo vs Uzbekistan
-  ["J",2,"Jun 27","9:00 PM CT"],  // Jordan vs Argentina
   ["J",4,"Jun 27","9:00 PM CT"],  // Algeria vs Austria
+  ["J",2,"Jun 27","9:00 PM CT"],  // Jordan vs Argentina
 ]
-const ROUND_NAMES=["Round of 32","Round of 16","Quarter-Finals","Semi-Finals","3rd Place","Final"];
 const ROUND_PTS=[2,4,8,16,8,32];
 const FLAGS={};Object.values(GROUPS).forEach(g=>Object.assign(FLAGS,g.flags));
 function flag(t){return FLAGS[t]||"🏳️";}
@@ -1249,3 +1248,4 @@ window.showTab=(id,el)=>{
 </script>
 </body>
 </html>
+
