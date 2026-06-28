@@ -925,12 +925,12 @@ function cascadeClear(fromRound,fromMatch,clearedTeam){
 
 // ── SCORING ──────────────────────────────────────────────
 function calcScore(userPicks){
-  let pts=0,correct=0,total=0;
+  let groupPts=0,koPts=0,correct=0,total=0;
   Object.entries(GROUPS).forEach(([grp,data])=>{
     data.matches.forEach((match,mi)=>{
       const pick=userPicks.groupPicks?.[grp]?.[mi];if(!pick)return;total++;
       const actual=resultsData?.group?.[grp]?.[mi];
-      if(actual&&actual===pick){correct++;pts+=1;}
+      if(actual&&actual!=='draw'&&actual===pick){correct++;groupPts+=1;}
     });
   });
   for(let r=0;r<=5;r++){
@@ -938,13 +938,15 @@ function calcScore(userPicks){
     Object.entries(matches).forEach(([mi,pick])=>{
       if(!pick)return;total++;
       const actual=resultsData?.ko?.[r]?.[parseInt(mi)];
-      if(actual&&actual===pick){correct++;pts+=ROUND_PTS[r];}
+      if(actual&&actual===pick){correct++;koPts+=ROUND_PTS[r];}
     });
   }
-  return{pts,correct,total};
+  return{pts:groupPts+koPts,groupPts,koPts,correct,total};
 }
 
 // ── LEADERBOARD ──────────────────────────────────────────
+let lbSortCol='pts',lbSortDir=-1;
+
 function subscribeLeaderboard(){
   if(leaderboardUnsub)leaderboardUnsub();
   leaderboardUnsub=db.collection('pools').doc(currentPoolId).collection('picks').onSnapshot(snap=>{
@@ -955,24 +957,36 @@ function subscribeLeaderboard(){
   });
 }
 
+window.sortLeaderboard=(col)=>{
+  if(lbSortCol===col)lbSortDir*=-1;
+  else{lbSortCol=col;lbSortDir=-1;}
+  renderLeaderboard();
+};
+
 function renderLeaderboard(){
   const container=document.getElementById('leaderboard-content');
   if(!allUsersCache.length){container.innerHTML='<div style="color:var(--text-muted);font-size:13px">No participants yet.</div>';return;}
-  const scored=allUsersCache.map(u=>({...u,...calcScore(u)})).sort((a,b)=>b.pts-a.pts);
-  let html=`<table class="lb-table"><thead><tr><th>#</th><th>Player</th><th>Score</th><th>Correct</th><th>Completion</th><th>Champion pick</th></tr></thead><tbody>`;
+  const scored=allUsersCache.map(u=>({...u,...calcScore(u)}));
+  scored.sort((a,b)=>lbSortDir*(b[lbSortCol]??0-(a[lbSortCol]??0)));
+  const arrow=(col)=>lbSortCol===col?(lbSortDir===-1?' ↓':' ↑'):'';
+  const th=(col,label)=>`<th style="cursor:pointer;user-select:none" onclick="sortLeaderboard('${col}')">${label}${arrow(col)}</th>`;
+  let html=`<table class="lb-table"><thead><tr>
+    <th>#</th><th>Player</th>
+    ${th('groupPts','Group')}
+    ${th('koPts','Knockout')}
+    ${th('pts','Total')}
+    <th>Champion</th>
+  </tr></thead><tbody>`;
   scored.forEach((u,i)=>{
     const rank=i+1,isMe=u.uid===currentUser.uid;
     const bc=rank===1?'r1':rank===2?'r2':rank===3?'r3':'rn';
     const champ=u.koPicks?.[5]?.[0]||'—';
-    const gpicked=Object.values(u.groupPicks||{}).reduce((s,g)=>s+Object.keys(g).length,0);
-    const kopicked=[0,1,2,3,4,5].reduce((s,r)=>s+Object.keys(u.koPicks?.[r]||{}).length,0);
-    const pct=Math.round(((gpicked+kopicked)/104)*100);
     html+=`<tr class="${isMe?'me':''}">
       <td><span class="rank-badge ${bc}">${rank}</span></td>
       <td><div style="display:flex;align-items:center;gap:8px;">${u.photoURL?`<img src="${u.photoURL}" style="width:22px;height:22px;border-radius:50%;">`:''}<span>${u.displayName||'Anonymous'}${isMe?' <span style="color:var(--gold);font-size:11px">(you)</span>':''}</span></div></td>
-      <td class="score-pts">${u.pts} pts</td>
-      <td style="color:var(--text-muted)">${u.correct||0}/${u.total||0}</td>
-      <td><span style="font-size:12px">${pct}%</span><span class="comp-bar"><span class="comp-fill" style="width:${pct}%"></span></span></td>
+      <td style="color:var(--text-muted)">${u.groupPts||0}</td>
+      <td style="color:var(--text-muted)">${u.koPts||0}</td>
+      <td class="score-pts">${u.pts||0}</td>
       <td>${champ!=='—'?flag(champ)+' '+champ:'—'}</td>
     </tr>`;
   });
