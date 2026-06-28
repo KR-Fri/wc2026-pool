@@ -967,26 +967,34 @@ function renderLeaderboard(){
   const container=document.getElementById('leaderboard-content');
   if(!allUsersCache.length){container.innerHTML='<div style="color:var(--text-muted);font-size:13px">No participants yet.</div>';return;}
   const scored=allUsersCache.map(u=>({...u,...calcScore(u)}));
-  scored.sort((a,b)=>lbSortDir*(b[lbSortCol]??0-(a[lbSortCol]??0)));
+  scored.sort((a,b)=>lbSortDir*((b[lbSortCol]||0)-(a[lbSortCol]||0)));
   const arrow=(col)=>lbSortCol===col?(lbSortDir===-1?' ↓':' ↑'):'';
-  const th=(col,label)=>`<th style="cursor:pointer;user-select:none" onclick="sortLeaderboard('${col}')">${label}${arrow(col)}</th>`;
+  const th=(col,label)=>`<th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="sortLeaderboard('${col}')">${label}${arrow(col)}</th>`;
   let html=`<table class="lb-table"><thead><tr>
     <th>#</th><th>Player</th>
     ${th('groupPts','Group')}
     ${th('koPts','Knockout')}
     ${th('pts','Total')}
+    ${th('correct','Correct')}
+    ${th('gpicked','Picks Made')}
     <th>Champion</th>
   </tr></thead><tbody>`;
   scored.forEach((u,i)=>{
     const rank=i+1,isMe=u.uid===currentUser.uid;
     const bc=rank===1?'r1':rank===2?'r2':rank===3?'r3':'rn';
     const champ=u.koPicks?.[5]?.[0]||'—';
+    const gpicked=Object.values(u.groupPicks||{}).reduce((s,g)=>s+Object.keys(g).length,0);
+    const kopicked=[0,1,2,3,4,5].reduce((s,r)=>s+Object.keys(u.koPicks?.[r]||{}).length,0);
+    const totalPicks=gpicked+kopicked;
+    u.gpicked=totalPicks;
     html+=`<tr class="${isMe?'me':''}">
       <td><span class="rank-badge ${bc}">${rank}</span></td>
       <td><div style="display:flex;align-items:center;gap:8px;">${u.photoURL?`<img src="${u.photoURL}" style="width:22px;height:22px;border-radius:50%;">`:''}<span>${u.displayName||'Anonymous'}${isMe?' <span style="color:var(--gold);font-size:11px">(you)</span>':''}</span></div></td>
       <td style="color:var(--text-muted)">${u.groupPts||0}</td>
       <td style="color:var(--text-muted)">${u.koPts||0}</td>
       <td class="score-pts">${u.pts||0}</td>
+      <td style="color:var(--text-muted)">${u.correct||0}/${u.total||0}</td>
+      <td style="color:var(--text-muted)">${totalPicks}</td>
       <td>${champ!=='—'?flag(champ)+' '+champ:'—'}</td>
     </tr>`;
   });
