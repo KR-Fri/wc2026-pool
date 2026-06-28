@@ -394,10 +394,18 @@ header{background:var(--navy);border-bottom:1px solid var(--border);padding:10px
       <div id="lock-controls"></div>
     </div>
     <div class="commish-section" id="seed-section" style="display:none">
-      <h3>🌱 Seed the Knockout Bracket</h3>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Enter the 32 qualifying teams in R32 matchup order (follow the official FIFA bracket). Save, then open the knockout round.</div>
-      <div class="seed-grid" id="seed-grid"></div>
-      <button class="btn btn-gold" onclick="saveSeeds()">💾 Save Bracket</button>
+      <h3>🌱 Seed Actual Teams Per Round</h3>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Enter the actual qualifying teams for each round as they become known. R32 first, then fill in subsequent rounds after each round completes.</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn btn-sm" id="st-r32" onclick="showSeedTab(0,this)">R32</button>
+        <button class="btn btn-sm" id="st-r16" onclick="showSeedTab(1,this)">R16</button>
+        <button class="btn btn-sm" id="st-qf" onclick="showSeedTab(2,this)">QF</button>
+        <button class="btn btn-sm" id="st-sf" onclick="showSeedTab(3,this)">SF</button>
+        <button class="btn btn-sm" id="st-3rd" onclick="showSeedTab(4,this)">3rd Place</button>
+        <button class="btn btn-sm" id="st-f" onclick="showSeedTab(5,this)">Final</button>
+      </div>
+      <div id="seed-grid"></div>
+      <button class="btn btn-gold" onclick="saveSeeds()">💾 Save</button>
     </div>
     <div class="commish-section">
       <h3>📋 Enter Match Results</h3>
@@ -665,6 +673,9 @@ async function enterPool(poolId){
   resultsData=rSnap.exists?rSnap.data():{};
   const sSnap=await db.collection('pools').doc(poolId).collection('meta').doc('seeds').get();
   bracketSeeds=sSnap.exists?(sSnap.data().seeds||[]):[];
+  actualSeeds=sSnap.exists?(sSnap.data().actualSeeds||{}):[];
+  // Backwards compat: if R32 seeds exist but actualSeeds[0] doesn't, populate it
+  if(bracketSeeds.length===32&&!actualSeeds[0])actualSeeds[0]=bracketSeeds;;
   document.getElementById('header-pool-name').textContent='· '+poolData.name;
   document.getElementById('commish-pool-label').textContent=poolData.name;
   document.getElementById('auth-screen').style.display='none';
@@ -835,8 +846,19 @@ function getKoTeams(){
     for(let m=0;m<prev.length/2;m++)cur.push([state.koPicks[r-1]?.[m*2]||null,state.koPicks[r-1]?.[m*2+1]||null]);
     teams[r]=cur;
   }
-  teams[4]=[[state.koPicks[4]?.[0]||null,state.koPicks[4]?.[1]||null]];
-  teams[5]=[[state.koPicks[3]?.[0]||null,state.koPicks[3]?.[1]||null]];
+  // Semi-final picks are in round 3 (teams[3] has 2 matches = 2 SF games)
+  // SF match 0: picks[3][0] is winner, loser is the other team in teams[3][0]
+  // SF match 1: picks[3][1] is winner, loser is the other team in teams[3][1]
+  const sf0pick=state.koPicks[3]?.[0]||null;
+  const sf1pick=state.koPicks[3]?.[1]||null;
+  const sf0pair=teams[3]?.[0]||[null,null];
+  const sf1pair=teams[3]?.[1]||[null,null];
+  const sf0loser=sf0pick&&sf0pair[0]&&sf0pair[1]?(sf0pick===sf0pair[0]?sf0pair[1]:sf0pair[0]):null;
+  const sf1loser=sf1pick&&sf1pair[0]&&sf1pair[1]?(sf1pick===sf1pair[0]?sf1pair[1]:sf1pair[0]):null;
+  // 3rd place: losers of both SFs
+  teams[4]=[[sf0loser,sf1loser]];
+  // Final: winners of both SFs
+  teams[5]=[[sf0pick,sf1pick]];
   return teams;
 }
 
@@ -1151,32 +1173,76 @@ window.toggleKoOpen=async()=>{
   poolData=pSnap.data();renderCommishPanel();renderBracket();toast(koOpen?'Knockout round closed':'Knockout round opened!');
 };
 
+// actualSeeds[r] = flat array of team pairs for that round
+// r0: 32 teams (16 matches), r1: 16 teams (8 matches), etc.
+const ROUND_SIZES=[16,8,4,2,1,1]; // matches per round
+const ROUND_TEAM_COUNTS=[32,16,8,4,2,2]; // teams per round (3rd+Final each have 2 teams = 1 match)
+let currentSeedTab=0;
+let actualSeeds={}; // {0:[...32 teams], 1:[...16 teams], ...}
+
+window.showSeedTab=(r,btn)=>{
+  currentSeedTab=r;
+  document.querySelectorAll('[id^="st-"]').forEach(b=>b.style.borderColor=b.style.color='');
+  if(btn){btn.style.borderColor='var(--gold)';btn.style.color='var(--gold)';}
+  renderSeedSection();
+};
+
 function renderSeedSection(){
-  const seeded=bracketSeeds.length===32;
-  document.getElementById('seed-section').style.display=isGroupLocked()||seeded?'block':'none';
-  const grid=document.getElementById('seed-grid');grid.innerHTML='';
-  for(let i=0;i<16;i++){
+  document.getElementById('seed-section').style.display=isGroupLocked()?'block':'none';
+  if(!isGroupLocked())return;
+  const r=currentSeedTab;
+  const matchCount=ROUND_SIZES[r];
+  const seeds=actualSeeds[r]||[];
+  const grid=document.getElementById('seed-grid');
+  grid.innerHTML='';
+  const roundLabel=['R32','R16','QF','SF','3rd Place','Final'][r];
+  const desc=document.createElement('div');
+  desc.style.cssText='font-size:12px;color:var(--text-muted);margin-bottom:12px;';
+  desc.textContent=`Entering actual teams for ${roundLabel} (${matchCount} match${matchCount>1?'es':''})`;
+  grid.appendChild(desc);
+  const seedGrid=document.createElement('div');
+  seedGrid.className='seed-grid';
+  for(let i=0;i<matchCount;i++){
     const slot=document.createElement('div');slot.className='seed-slot';
     slot.innerHTML=`<span class="seed-slot-label">Match ${i+1}</span>
-      <input class="seed-input" id="seed-${i*2}" placeholder="Team A" value="${bracketSeeds[i*2]||''}">
+      <input class="seed-input" id="seed-${i*2}" placeholder="Team A" value="${seeds[i*2]||''}">
       <span style="color:var(--text-muted);font-size:11px;padding:0 4px">vs</span>
-      <input class="seed-input" id="seed-${i*2+1}" placeholder="Team B" value="${bracketSeeds[i*2+1]||''}">`;
-    grid.appendChild(slot);
+      <input class="seed-input" id="seed-${i*2+1}" placeholder="Team B" value="${seeds[i*2+1]||''}">`;
+    seedGrid.appendChild(slot);
   }
+  grid.appendChild(seedGrid);
+  // highlight the active tab
+  document.querySelectorAll('[id^="st-"]').forEach((b,i)=>{
+    b.style.borderColor=i===r?'var(--gold)':'';
+    b.style.color=i===r?'var(--gold)':'';
+  });
 }
 
 window.saveSeeds=async()=>{
+  const r=currentSeedTab;
+  const matchCount=ROUND_SIZES[r];
   const seeds=[];
-  for(let i=0;i<32;i++)seeds.push(document.getElementById('seed-'+i)?.value.trim()||'');
+  for(let i=0;i<matchCount*2;i++)seeds.push(document.getElementById('seed-'+i)?.value.trim()||'');
   const filled=seeds.filter(s=>s).length;
-  if(filled<32&&!confirm(`Only ${filled}/32 slots filled. Save anyway?`))return;
-  await db.collection('pools').doc(currentPoolId).collection('meta').doc('seeds').set({seeds});
-  bracketSeeds=seeds;renderBracket();renderResultsEntry();toast('Bracket seeded! '+filled+'/32 teams entered.');
+  if(filled<matchCount*2&&!confirm(`Only ${filled}/${matchCount*2} team slots filled. Save anyway?`))return;
+  if(!actualSeeds)actualSeeds={};
+  actualSeeds[r]=seeds;
+  // Also keep bracketSeeds for R32 (backwards compat)
+  if(r===0)bracketSeeds=seeds;
+  await db.collection('pools').doc(currentPoolId).collection('meta').doc('seeds').set({
+    seeds:bracketSeeds, actualSeeds
+  },{merge:true});
+  renderResultsEntry();
+  toast(`${['R32','R16','QF','SF','3rd Place','Final'][r]} bracket saved!`);
 };
+
+function getActualTeams(r,mi){
+  const seeds=actualSeeds[r]||[];
+  return [seeds[mi*2]||null, seeds[mi*2+1]||null];
+}
 
 function renderResultsEntry(){
   const grpDiv=document.getElementById('group-results-div');grpDiv.innerHTML='';
-  // Use same chronological order as My Score
   MATCH_SCHEDULE.forEach(([grp,mi,date,time])=>{
     const match=GROUPS[grp].matches[mi];
     if(!match)return;
@@ -1189,17 +1255,23 @@ function renderResultsEntry(){
     grpDiv.appendChild(row);
   });
   const koDiv=document.getElementById('ko-results-div');koDiv.innerHTML='';
-  const koTeams=getKoTeams();
   ROUND_NAMES.forEach((rname,r)=>{
-    const label=document.createElement('div');label.className='rgl';label.textContent=rname.toUpperCase();koDiv.appendChild(label);
-    (koTeams[r]||[]).forEach((pair,mi)=>{
-      const[t1,t2]=pair;if(!t1&&!t2)return;
+    const matchCount=ROUND_SIZES[r];
+    const seeds=actualSeeds[r]||[];
+    const hasSeeds=seeds.filter(s=>s).length>0;
+    const label=document.createElement('div');label.className='rgl';
+    label.innerHTML=`${rname.toUpperCase()} ${!hasSeeds?'<span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">— seed teams first</span>':''}`;
+    koDiv.appendChild(label);
+    if(!hasSeeds)return;
+    for(let mi=0;mi<matchCount;mi++){
+      const [t1,t2]=getActualTeams(r,mi);
+      if(!t1&&!t2)continue;
       const actual=resultsData?.ko?.[r]?.[mi];
       const row=document.createElement('div');row.className='result-match';
       row.innerHTML=`<span style="font-size:11px;color:var(--text-muted);min-width:55px">Match ${mi+1}</span>`+
-        [t1,t2].filter(Boolean).map(t=>`<button class="result-btn ${actual===t?'selected':''}" onclick="setResult('ko',${r},${mi},'${t.replace(/'/g,"\\'")}')">${flag(t)} ${t}</button>`).join('<span style="color:var(--text-muted);font-size:11px;padding:0 2px">vs</span>');
+        [t1,t2].filter(Boolean).map(t=>`<button class="result-btn ${actual===t?'selected':''}" onclick="setResult('ko',${r},${mi},'${t.replace(/'/g,"\\'")}')">${flag(t)||'🏳️'} ${t}</button>`).join('<span style="color:var(--text-muted);font-size:11px;padding:0 2px">vs</span>');
       koDiv.appendChild(row);
-    });
+    }
   });
 }
 
