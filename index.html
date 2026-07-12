@@ -1229,60 +1229,63 @@ function renderSeedSection(){
 }
 
 window.saveOverride=async()=>{
-  const ov=[];
-  for(let i=0;i<4;i++)ov.push(document.getElementById('sfov-'+i)?.value.trim()||'');
-  if(!ov.some(v=>v)){toast('Enter at least one SF matchup');return;}
-  sfOverride=ov;
-  const sf1teams=new Set([ov[0],ov[1]].filter(Boolean)); // Spain, France
-  const sf2teams=new Set([ov[2],ov[3]].filter(Boolean)); // Argentina, England
+  try{
+    const ov=[];
+    for(let i=0;i<4;i++){
+      const el=document.getElementById('sfov-'+i);
+      ov.push(el?el.value.trim():'');
+    }
+    console.log('saveOverride called, values:',ov);
+    if(!ov.some(v=>v)){toast('Enter at least one SF matchup');return;}
+    sfOverride=ov;
+    const sf1teams=new Set([ov[0],ov[1]].filter(Boolean));
+    const sf2teams=new Set([ov[2],ov[3]].filter(Boolean));
+    console.log('SF1 teams:',sf1teams,'SF2 teams:',sf2teams);
 
-  // Migrate all users' SF/3rd/Final picks
-  const picksSnap=await db.collection('pools').doc(currentPoolId).collection('picks').get();
-  const batch=db.batch();
-  picksSnap.forEach(d=>{
-    const data=d.data();
-    const koPicks=JSON.parse(JSON.stringify(data.koPicks||{}));
-    const oldSF=koPicks[3]||{};
-    const newSF={};
+    // Save override to Firestore first to confirm it works
+    await db.collection('pools').doc(currentPoolId).collection('meta').doc('seeds').set({sfOverride:ov},{merge:true});
+    console.log('sfOverride saved to Firestore');
 
-    // Try to map old SF picks to correct match slots
-    // Check all old SF picks (indices 0 and 1)
-    [oldSF[0],oldSF[1]].filter(Boolean).forEach(pick=>{
-      if(sf1teams.has(pick)) newSF[0]=pick;  // belongs in SF match 1
-      else if(sf2teams.has(pick)) newSF[1]=pick; // belongs in SF match 2
+    // Migrate all users picks
+    const picksSnap=await db.collection('pools').doc(currentPoolId).collection('picks').get();
+    const batch=db.batch();
+    picksSnap.forEach(d=>{
+      const data=d.data();
+      const koPicks=JSON.parse(JSON.stringify(data.koPicks||{}));
+      const oldSF=koPicks[3]||{};
+      const newSF={};
+      [oldSF[0],oldSF[1]].filter(Boolean).forEach(pick=>{
+        if(sf1teams.has(pick)) newSF[0]=pick;
+        else if(sf2teams.has(pick)) newSF[1]=pick;
+      });
+      koPicks[3]=newSF;
+      const allSFTeams=new Set([...sf1teams,...sf2teams]);
+      const finalPick=koPicks[5]?.[0];
+      if(finalPick&&!allSFTeams.has(finalPick)) delete koPicks[5];
+      delete koPicks[4];
+      batch.update(d.ref,{koPicks});
     });
-    koPicks[3]=newSF;
+    await batch.commit();
+    console.log('All picks migrated');
 
-    // Keep Final/winner pick if still valid (team is still in SF)
-    const allSFTeams=new Set([...sf1teams,...sf2teams]);
-    const finalPick=koPicks[5]?.[0];
-    if(finalPick&&!allSFTeams.has(finalPick)) delete koPicks[5];
+    // Clear SF/3rd/Final results
+    if(resultsData.ko){
+      delete resultsData.ko[3];
+      delete resultsData.ko[4];
+      delete resultsData.ko[5];
+    }
+    await db.collection('pools').doc(currentPoolId).collection('meta').doc('results').set(resultsData,{merge:true});
 
-    // Recalculate 3rd place: if both SF picks made, 3rd = loser of whichever SF their 3rd pick lost
-    // Just clear it — will auto-populate from SF picks in bracket
-    delete koPicks[4];
+    // Reload own picks
+    const myPicksSnap=await db.collection('pools').doc(currentPoolId).collection('picks').doc(currentUser.uid).get();
+    if(myPicksSnap.exists){const d=myPicksSnap.data();state.koPicks=d.koPicks||{};}
 
-    batch.update(d.ref,{koPicks});
-  });
-  await batch.commit();
-
-  // Save override to Firestore
-  await db.collection('pools').doc(currentPoolId).collection('meta').doc('seeds').set({sfOverride:ov},{merge:true});
-
-  // Clear SF/3rd/Final results only
-  if(resultsData.ko){
-    delete resultsData.ko[3];
-    delete resultsData.ko[4];
-    delete resultsData.ko[5];
+    toast('SF matchups saved. Picks migrated successfully.');
+    renderBracket();renderResultsEntry();renderCommishPanel();
+  } catch(e){
+    console.error('saveOverride error:',e);
+    toast('Error saving: '+e.message);
   }
-  await db.collection('pools').doc(currentPoolId).collection('meta').doc('results').set(resultsData,{merge:true});
-
-  // Reload own picks
-  const myPicksSnap=await db.collection('pools').doc(currentPoolId).collection('picks').doc(currentUser.uid).get();
-  if(myPicksSnap.exists){const d=myPicksSnap.data();state.koPicks=d.koPicks||{};}
-
-  toast('SF matchups saved. Picks migrated — SF picks remapped, Final picks kept where valid.');
-  renderBracket();renderResultsEntry();renderCommishPanel();
 };
 
 window.saveSeeds=async()=>{
