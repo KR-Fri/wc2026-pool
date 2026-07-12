@@ -394,18 +394,16 @@ header{background:var(--navy);border-bottom:1px solid var(--border);padding:10px
       <div id="lock-controls"></div>
     </div>
     <div class="commish-section" id="seed-section" style="display:none">
-      <h3>🌱 Seed Actual Teams Per Round</h3>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Enter the actual qualifying teams for each round as they become known. R32 first, then fill in subsequent rounds after each round completes.</div>
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-        <button class="btn btn-sm" id="st-r32" onclick="showSeedTab(0,this)">R32</button>
-        <button class="btn btn-sm" id="st-r16" onclick="showSeedTab(1,this)">R16</button>
-        <button class="btn btn-sm" id="st-qf" onclick="showSeedTab(2,this)">QF</button>
-        <button class="btn btn-sm" id="st-sf" onclick="showSeedTab(3,this)">SF</button>
-        <button class="btn btn-sm" id="st-3rd" onclick="showSeedTab(4,this)">3rd Place</button>
-        <button class="btn btn-sm" id="st-f" onclick="showSeedTab(5,this)">Final</button>
-      </div>
+      <h3>🌱 Seed R32 Bracket</h3>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Enter the 32 actual qualifying teams in R32 matchup order. R16 and QF derive automatically from results.</div>
       <div id="seed-grid"></div>
-      <button class="btn btn-gold" onclick="saveSeeds()">💾 Save</button>
+      <button class="btn btn-gold" onclick="saveSeeds()">💾 Save R32 Bracket</button>
+    </div>
+    <div class="commish-section" id="override-section" style="display:none">
+      <h3>⚙️ Override SF / Final Matchups</h3>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Use this when actual matchups differ from the bracket cascade (e.g. FIFA cross-bracket pairings). Overriding will re-open picks for SF and beyond so users can re-pick.</div>
+      <div class="seed-grid" id="override-grid"></div>
+      <button class="btn btn-gold" onclick="saveOverride()">💾 Save & Re-open SF Picks</button>
     </div>
     <div class="commish-section">
       <h3>📋 Enter Match Results</h3>
@@ -567,6 +565,7 @@ const MATCH_SCHEDULE=[
   ["J",4,"Jun 27","9:00 PM CT"],  // Algeria vs Austria
   ["J",2,"Jun 27","9:00 PM CT"],  // Jordan vs Argentina
 ]
+const ROUND_SIZES=[16,8,4,2,1,1];
 const ROUND_NAMES=["Round of 32","Round of 16","Quarter-Finals","Semi-Finals","3rd Place","Final"];
 const ROUND_PTS=[2,4,8,16,8,32];
 const FLAGS={};Object.values(GROUPS).forEach(g=>Object.assign(FLAGS,g.flags));
@@ -673,9 +672,7 @@ async function enterPool(poolId){
   resultsData=rSnap.exists?rSnap.data():{};
   const sSnap=await db.collection('pools').doc(poolId).collection('meta').doc('seeds').get();
   bracketSeeds=sSnap.exists?(sSnap.data().seeds||[]):[];
-  actualSeeds=sSnap.exists?(sSnap.data().actualSeeds||{}):[];
-  // Backwards compat: if R32 seeds exist but actualSeeds[0] doesn't, populate it
-  if(bracketSeeds.length===32&&!actualSeeds[0])actualSeeds[0]=bracketSeeds;;
+  sfOverride=sSnap.exists?(sSnap.data().sfOverride||[]):[];
   document.getElementById('header-pool-name').textContent='· '+poolData.name;
   document.getElementById('commish-pool-label').textContent=poolData.name;
   document.getElementById('auth-screen').style.display='none';
@@ -841,23 +838,27 @@ function getKoTeams(){
   const teams=[];
   const r0=[];for(let i=0;i<16;i++)r0.push([bracketSeeds[i*2]||null,bracketSeeds[i*2+1]||null]);
   teams[0]=r0;
-  for(let r=1;r<=3;r++){
+  for(let r=1;r<=2;r++){
     const prev=teams[r-1];const cur=[];
     for(let m=0;m<prev.length/2;m++)cur.push([state.koPicks[r-1]?.[m*2]||null,state.koPicks[r-1]?.[m*2+1]||null]);
     teams[r]=cur;
   }
-  // Semi-final picks are in round 3 (teams[3] has 2 matches = 2 SF games)
-  // SF match 0: picks[3][0] is winner, loser is the other team in teams[3][0]
-  // SF match 1: picks[3][1] is winner, loser is the other team in teams[3][1]
+  // SF: use override if set, otherwise cascade from QF picks
+  if(sfOverride.length===4){
+    teams[3]=[[sfOverride[0]||null,sfOverride[1]||null],[sfOverride[2]||null,sfOverride[3]||null]];
+  } else {
+    const prev=teams[2];const cur=[];
+    for(let m=0;m<prev.length/2;m++)cur.push([state.koPicks[2]?.[m*2]||null,state.koPicks[2]?.[m*2+1]||null]);
+    teams[3]=cur;
+  }
+  // 3rd place: losers of SF picks
   const sf0pick=state.koPicks[3]?.[0]||null;
   const sf1pick=state.koPicks[3]?.[1]||null;
   const sf0pair=teams[3]?.[0]||[null,null];
   const sf1pair=teams[3]?.[1]||[null,null];
   const sf0loser=sf0pick&&sf0pair[0]&&sf0pair[1]?(sf0pick===sf0pair[0]?sf0pair[1]:sf0pair[0]):null;
   const sf1loser=sf1pick&&sf1pair[0]&&sf1pair[1]?(sf1pick===sf1pair[0]?sf1pair[1]:sf1pair[0]):null;
-  // 3rd place: losers of both SFs
   teams[4]=[[sf0loser,sf1loser]];
-  // Final: winners of both SFs
   teams[5]=[[sf0pick,sf1pick]];
   return teams;
 }
@@ -1195,72 +1196,137 @@ window.toggleKoOpen=async()=>{
   poolData=pSnap.data();renderCommishPanel();renderBracket();toast(koOpen?'Knockout round closed':'Knockout round opened!');
 };
 
-// actualSeeds[r] = flat array of team pairs for that round
-// r0: 32 teams (16 matches), r1: 16 teams (8 matches), etc.
-const ROUND_SIZES=[16,8,4,2,1,1]; // matches per round
-const ROUND_TEAM_COUNTS=[32,16,8,4,2,2]; // teams per round (3rd+Final each have 2 teams = 1 match)
 let currentSeedTab=0;
-let actualSeeds={}; // {0:[...32 teams], 1:[...16 teams], ...}
-
-window.showSeedTab=(r,btn)=>{
-  currentSeedTab=r;
-  document.querySelectorAll('[id^="st-"]').forEach(b=>b.style.borderColor=b.style.color='');
-  if(btn){btn.style.borderColor='var(--gold)';btn.style.color='var(--gold)';}
-  renderSeedSection();
-};
+let sfOverride=[]; // [sf1teamA, sf1teamB, sf2teamA, sf2teamB]
 
 function renderSeedSection(){
   document.getElementById('seed-section').style.display=isGroupLocked()?'block':'none';
+  document.getElementById('override-section').style.display=isGroupLocked()?'block':'none';
   if(!isGroupLocked())return;
-  const r=currentSeedTab;
-  const matchCount=ROUND_SIZES[r];
-  const seeds=actualSeeds[r]||[];
   const grid=document.getElementById('seed-grid');
   grid.innerHTML='';
-  const roundLabel=['R32','R16','QF','SF','3rd Place','Final'][r];
-  const desc=document.createElement('div');
-  desc.style.cssText='font-size:12px;color:var(--text-muted);margin-bottom:12px;';
-  desc.textContent=`Entering actual teams for ${roundLabel} (${matchCount} match${matchCount>1?'es':''})`;
-  grid.appendChild(desc);
   const seedGrid=document.createElement('div');
   seedGrid.className='seed-grid';
-  for(let i=0;i<matchCount;i++){
+  for(let i=0;i<16;i++){
     const slot=document.createElement('div');slot.className='seed-slot';
     slot.innerHTML=`<span class="seed-slot-label">Match ${i+1}</span>
-      <input class="seed-input" id="seed-${i*2}" placeholder="Team A" value="${seeds[i*2]||''}">
+      <input class="seed-input" id="seed-${i*2}" placeholder="Team A" value="${bracketSeeds[i*2]||''}">
       <span style="color:var(--text-muted);font-size:11px;padding:0 4px">vs</span>
-      <input class="seed-input" id="seed-${i*2+1}" placeholder="Team B" value="${seeds[i*2+1]||''}">`;
+      <input class="seed-input" id="seed-${i*2+1}" placeholder="Team B" value="${bracketSeeds[i*2+1]||''}">`;
     seedGrid.appendChild(slot);
   }
   grid.appendChild(seedGrid);
-  // highlight the active tab
-  document.querySelectorAll('[id^="st-"]').forEach((b,i)=>{
-    b.style.borderColor=i===r?'var(--gold)':'';
-    b.style.color=i===r?'var(--gold)':'';
-  });
+  // Override section
+  const og=document.getElementById('override-grid');og.innerHTML='';
+  const labels=['SF Match 1','SF Match 2'];
+  for(let i=0;i<2;i++){
+    const slot=document.createElement('div');slot.className='seed-slot';
+    slot.innerHTML=`<span class="seed-slot-label">${labels[i]}</span>
+      <input class="seed-input" id="sfov-${i*2}" placeholder="Team A" value="${sfOverride[i*2]||''}">
+      <span style="color:var(--text-muted);font-size:11px;padding:0 4px">vs</span>
+      <input class="seed-input" id="sfov-${i*2+1}" placeholder="Team B" value="${sfOverride[i*2+1]||''}">`;
+    og.appendChild(slot);
+  }
 }
 
-window.saveSeeds=async()=>{
-  const r=currentSeedTab;
-  const matchCount=ROUND_SIZES[r];
-  const seeds=[];
-  for(let i=0;i<matchCount*2;i++)seeds.push(document.getElementById('seed-'+i)?.value.trim()||'');
-  const filled=seeds.filter(s=>s).length;
-  if(filled<matchCount*2&&!confirm(`Only ${filled}/${matchCount*2} team slots filled. Save anyway?`))return;
-  if(!actualSeeds)actualSeeds={};
-  actualSeeds[r]=seeds;
-  // Also keep bracketSeeds for R32 (backwards compat)
-  if(r===0)bracketSeeds=seeds;
-  await db.collection('pools').doc(currentPoolId).collection('meta').doc('seeds').set({
-    seeds:bracketSeeds, actualSeeds
-  },{merge:true});
-  renderResultsEntry();
-  toast(`${['R32','R16','QF','SF','3rd Place','Final'][r]} bracket saved!`);
+window.saveOverride=async()=>{
+  const ov=[];
+  for(let i=0;i<4;i++)ov.push(document.getElementById('sfov-'+i)?.value.trim()||'');
+  if(!ov.some(v=>v)){toast('Enter at least one SF matchup');return;}
+  sfOverride=ov;
+  const sf1teams=new Set([ov[0],ov[1]].filter(Boolean)); // Spain, France
+  const sf2teams=new Set([ov[2],ov[3]].filter(Boolean)); // Argentina, England
+
+  // Migrate all users' SF/3rd/Final picks
+  const picksSnap=await db.collection('pools').doc(currentPoolId).collection('picks').get();
+  const batch=db.batch();
+  picksSnap.forEach(d=>{
+    const data=d.data();
+    const koPicks=JSON.parse(JSON.stringify(data.koPicks||{}));
+    const oldSF=koPicks[3]||{};
+    const newSF={};
+
+    // Try to map old SF picks to correct match slots
+    // Check all old SF picks (indices 0 and 1)
+    [oldSF[0],oldSF[1]].filter(Boolean).forEach(pick=>{
+      if(sf1teams.has(pick)) newSF[0]=pick;  // belongs in SF match 1
+      else if(sf2teams.has(pick)) newSF[1]=pick; // belongs in SF match 2
+    });
+    koPicks[3]=newSF;
+
+    // Keep Final/winner pick if still valid (team is still in SF)
+    const allSFTeams=new Set([...sf1teams,...sf2teams]);
+    const finalPick=koPicks[5]?.[0];
+    if(finalPick&&!allSFTeams.has(finalPick)) delete koPicks[5];
+
+    // Recalculate 3rd place: if both SF picks made, 3rd = loser of whichever SF their 3rd pick lost
+    // Just clear it — will auto-populate from SF picks in bracket
+    delete koPicks[4];
+
+    batch.update(d.ref,{koPicks});
+  });
+  await batch.commit();
+
+  // Save override to Firestore
+  await db.collection('pools').doc(currentPoolId).collection('meta').doc('seeds').set({sfOverride:ov},{merge:true});
+
+  // Clear SF/3rd/Final results only
+  if(resultsData.ko){
+    delete resultsData.ko[3];
+    delete resultsData.ko[4];
+    delete resultsData.ko[5];
+  }
+  await db.collection('pools').doc(currentPoolId).collection('meta').doc('results').set(resultsData,{merge:true});
+
+  // Reload own picks
+  const myPicksSnap=await db.collection('pools').doc(currentPoolId).collection('picks').doc(currentUser.uid).get();
+  if(myPicksSnap.exists){const d=myPicksSnap.data();state.koPicks=d.koPicks||{};}
+
+  toast('SF matchups saved. Picks migrated — SF picks remapped, Final picks kept where valid.');
+  renderBracket();renderResultsEntry();renderCommishPanel();
 };
 
-function getActualTeams(r,mi){
-  const seeds=actualSeeds[r]||[];
-  return [seeds[mi*2]||null, seeds[mi*2+1]||null];
+window.saveSeeds=async()=>{
+  const seeds=[];
+  for(let i=0;i<32;i++)seeds.push(document.getElementById('seed-'+i)?.value.trim()||'');
+  const filled=seeds.filter(s=>s).length;
+  if(filled<32&&!confirm(`Only ${filled}/32 slots filled. Save anyway?`))return;
+  bracketSeeds=seeds;
+  await db.collection('pools').doc(currentPoolId).collection('meta').doc('seeds').set({seeds},{merge:true});
+  renderBracket();renderResultsEntry();
+  toast('R32 bracket saved!');
+};
+
+// Get the two actual teams for a KO match based on results cascade
+// R32 (r=0): from bracketSeeds
+// R16/QF (r=1,2): winners of previous round's paired matches
+// SF (r=3): from sfOverride if set, otherwise cascade
+// 3rd/Final (r=4,5): from SF results
+function getActualMatchTeams(r, mi){
+  if(r===0){
+    return [bracketSeeds[mi*2]||null, bracketSeeds[mi*2+1]||null];
+  }
+  if(r===3&&sfOverride.length===4){
+    return [sfOverride[mi*2]||null, sfOverride[mi*2+1]||null];
+  }
+  if(r===4){
+    // 3rd place: losers of SF
+    const sf0pick=resultsData?.ko?.[3]?.[0]||null;
+    const sf1pick=resultsData?.ko?.[3]?.[1]||null;
+    const sf0=getActualMatchTeams(3,0);
+    const sf1=getActualMatchTeams(3,1);
+    const sf0loser=sf0pick&&sf0[0]&&sf0[1]?(sf0pick===sf0[0]?sf0[1]:sf0[0]):null;
+    const sf1loser=sf1pick&&sf1[0]&&sf1[1]?(sf1pick===sf1[0]?sf1[1]:sf1[0]):null;
+    return [sf0loser, sf1loser];
+  }
+  if(r===5){
+    // Final: winners of SF
+    return [resultsData?.ko?.[3]?.[0]||null, resultsData?.ko?.[3]?.[1]||null];
+  }
+  // R16, QF: cascade from previous round results
+  const t1=resultsData?.ko?.[r-1]?.[mi*2]||null;
+  const t2=resultsData?.ko?.[r-1]?.[mi*2+1]||null;
+  return [t1, t2];
 }
 
 function renderResultsEntry(){
@@ -1279,19 +1345,23 @@ function renderResultsEntry(){
   const koDiv=document.getElementById('ko-results-div');koDiv.innerHTML='';
   ROUND_NAMES.forEach((rname,r)=>{
     const matchCount=ROUND_SIZES[r];
-    const seeds=actualSeeds[r]||[];
-    const hasSeeds=seeds.filter(s=>s).length>0;
+    // Check if previous round is complete enough to show this round
+    const prevComplete=r===0?bracketSeeds.length===32:
+      Object.keys(resultsData?.ko?.[r-1]||{}).length>0;
     const label=document.createElement('div');label.className='rgl';
-    label.innerHTML=`${rname.toUpperCase()} ${!hasSeeds?'<span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">— seed teams first</span>':''}`;
+    label.innerHTML=`${rname.toUpperCase()}${!prevComplete?' <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">— enter previous round results first</span>':''}`;
     koDiv.appendChild(label);
-    if(!hasSeeds)return;
+    if(!prevComplete)return;
     for(let mi=0;mi<matchCount;mi++){
-      const [t1,t2]=getActualTeams(r,mi);
+      const[t1,t2]=getActualMatchTeams(r,mi);
       if(!t1&&!t2)continue;
       const actual=resultsData?.ko?.[r]?.[mi];
       const row=document.createElement('div');row.className='result-match';
+      const teams=[t1,t2].filter(Boolean);
+      if(teams.length===0)continue;
       row.innerHTML=`<span style="font-size:11px;color:var(--text-muted);min-width:55px">Match ${mi+1}</span>`+
-        [t1,t2].filter(Boolean).map(t=>`<button class="result-btn ${actual===t?'selected':''}" onclick="setResult('ko',${r},${mi},'${t.replace(/'/g,"\\'")}')">${flag(t)||'🏳️'} ${t}</button>`).join('<span style="color:var(--text-muted);font-size:11px;padding:0 2px">vs</span>');
+        teams.map(t=>`<button class="result-btn ${actual===t?'selected':''}" onclick="setResult('ko',${r},${mi},'${t.replace(/'/g,"\\'")}')">${flag(t)||'🏳️'} ${t}</button>`).join('<span style="color:var(--text-muted);font-size:11px;padding:0 2px">vs</span>');
+      if(!t1||!t2){row.innerHTML+=`<span style="font-size:11px;color:var(--text-muted);margin-left:8px">TBD</span>`;}
       koDiv.appendChild(row);
     }
   });
@@ -1314,6 +1384,9 @@ window.setResult=(type,...args)=>{
 
 window.saveResults=async()=>{
   await db.collection('pools').doc(currentPoolId).collection('meta').doc('results').set(resultsData,{merge:true});
+  // Reload from Firestore to ensure in-memory state matches what's stored
+  const rSnap=await db.collection('pools').doc(currentPoolId).collection('meta').doc('results').get();
+  resultsData=rSnap.exists?rSnap.data():{};
   toast("Results saved — scores updated!");
   renderGroups();renderBracket();
   if(document.getElementById('leaderboard').classList.contains('active'))renderLeaderboard();
