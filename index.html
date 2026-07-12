@@ -572,7 +572,7 @@ const FLAGS={};Object.values(GROUPS).forEach(g=>Object.assign(FLAGS,g.flags));
 function flag(t){return FLAGS[t]||"🏳️";}
 
 let currentUser=null,isCommish=false,currentPoolId=null,poolData=null;
-let resultsData={},bracketSeeds=[],allUsersCache=[],leaderboardUnsub=null,chatUnsub=null;
+let resultsData={},bracketSeeds=[],sfOverride=[],allUsersCache=[],leaderboardUnsub=null,chatUnsub=null;
 const state={groupPicks:{},koPicks:{}};
 let activeGroupFilter='all',teamSearch='';
 
@@ -1197,7 +1197,6 @@ window.toggleKoOpen=async()=>{
 };
 
 let currentSeedTab=0;
-let sfOverride=[]; // [sf1teamA, sf1teamB, sf2teamA, sf2teamB]
 
 function renderSeedSection(){
   document.getElementById('seed-section').style.display=isGroupLocked()?'block':'none';
